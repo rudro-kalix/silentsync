@@ -1,6 +1,41 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useSync } from '../context/SyncContext';
 
 export default function ClassSchedule() {
+  const { classes, addClass, toggleClass, removeClass } = useSync();
+  const [name, setName] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+  const [days, setDays] = useState<number[]>([]);
+
+  const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  const dayIndices = [1, 2, 3, 4, 5, 6, 0];
+
+  const handleAddClass = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name || !startTime || !endTime || days.length === 0) return;
+    addClass({ name, startTime, endTime, days });
+    setName('');
+    setStartTime('');
+    setEndTime('');
+    setDays([]);
+  };
+
+  const toggleDay = (dayIndex: number) => {
+    setDays(prev => prev.includes(dayIndex) ? prev.filter(d => d !== dayIndex) : [...prev, dayIndex]);
+  };
+
+  const formatTime = (time: string) => {
+    if (!time) return '';
+    const [h, m] = time.split(':');
+    const hour = parseInt(h);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const formattedHour = hour % 12 || 12;
+    return `${formattedHour.toString().padStart(2, '0')}:${m} ${ampm}`;
+  };
+
+  const dayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+
   return (
     <>
       {/* Hero Section */}
@@ -48,33 +83,40 @@ export default function ClassSchedule() {
             <span className="material-symbols-outlined text-on-tertiary-container">edit_calendar</span>
             <h2 className="font-headline text-2xl font-bold">Manual Entry</h2>
           </div>
-          <form className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <form onSubmit={handleAddClass} className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="md:col-span-2">
               <label className="block text-sm font-semibold text-on-surface-variant mb-3">Class Name</label>
-              <input className="w-full bg-surface-container-lowest border-none rounded-xl py-4 px-6 focus:ring-2 focus:ring-tertiary-fixed-dim transition-all text-primary placeholder:text-outline-variant" placeholder="e.g. Advanced Macroeconomics" type="text" />
+              <input value={name} onChange={e => setName(e.target.value)} required className="w-full bg-surface-container-lowest border-none rounded-xl py-4 px-6 focus:ring-2 focus:ring-tertiary-fixed-dim transition-all text-primary placeholder:text-outline-variant" placeholder="e.g. Advanced Macroeconomics" type="text" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-on-surface-variant mb-3">Start Time</label>
-              <input className="w-full bg-surface-container-lowest border-none rounded-xl py-4 px-6 focus:ring-2 focus:ring-tertiary-fixed-dim transition-all text-primary" type="time" />
+              <input value={startTime} onChange={e => setStartTime(e.target.value)} required className="w-full bg-surface-container-lowest border-none rounded-xl py-4 px-6 focus:ring-2 focus:ring-tertiary-fixed-dim transition-all text-primary" type="time" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-on-surface-variant mb-3">End Time</label>
-              <input className="w-full bg-surface-container-lowest border-none rounded-xl py-4 px-6 focus:ring-2 focus:ring-tertiary-fixed-dim transition-all text-primary" type="time" />
+              <input value={endTime} onChange={e => setEndTime(e.target.value)} required className="w-full bg-surface-container-lowest border-none rounded-xl py-4 px-6 focus:ring-2 focus:ring-tertiary-fixed-dim transition-all text-primary" type="time" />
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-semibold text-on-surface-variant mb-3">Repeat Days</label>
               <div className="flex flex-wrap gap-3">
-                <button className="w-12 h-12 rounded-full border border-outline-variant flex items-center justify-center font-bold text-sm hover:bg-primary hover:text-white transition-all cursor-pointer" type="button">M</button>
-                <button className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm cursor-pointer" type="button">T</button>
-                <button className="w-12 h-12 rounded-full border border-outline-variant flex items-center justify-center font-bold text-sm hover:bg-primary hover:text-white transition-all cursor-pointer" type="button">W</button>
-                <button className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm cursor-pointer" type="button">T</button>
-                <button className="w-12 h-12 rounded-full border border-outline-variant flex items-center justify-center font-bold text-sm hover:bg-primary hover:text-white transition-all cursor-pointer" type="button">F</button>
-                <button className="w-12 h-12 rounded-full border border-outline-variant flex items-center justify-center font-bold text-sm hover:bg-primary hover:text-white transition-all cursor-pointer" type="button">S</button>
-                <button className="w-12 h-12 rounded-full border border-outline-variant flex items-center justify-center font-bold text-sm hover:bg-primary hover:text-white transition-all cursor-pointer" type="button">S</button>
+                {dayLabels.map((label, i) => {
+                  const dayIndex = dayIndices[i];
+                  const isSelected = days.includes(dayIndex);
+                  return (
+                    <button 
+                      key={i}
+                      onClick={() => toggleDay(dayIndex)}
+                      className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm transition-all cursor-pointer ${isSelected ? 'bg-primary text-white' : 'border border-outline-variant hover:bg-primary hover:text-white'}`} 
+                      type="button"
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
             <div className="md:col-span-2 flex justify-end mt-4">
-              <button className="bg-primary text-on-primary font-bold px-10 py-4 rounded-xl flex items-center gap-2 hover:opacity-90 transition-all cursor-pointer">
+              <button type="submit" className="bg-primary text-on-primary font-bold px-10 py-4 rounded-xl flex items-center gap-2 hover:opacity-90 transition-all cursor-pointer">
                 <span className="material-symbols-outlined">add</span>
                 Add Class to Schedule
               </button>
@@ -97,88 +139,40 @@ export default function ClassSchedule() {
         </div>
 
         <div className="space-y-4">
-          {/* Class Row 1 */}
-          <div className="bg-surface-container-lowest rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 transition-all hover:shadow-lg hover:shadow-primary/5">
-            <div className="flex items-center gap-6 w-full md:w-auto">
-              <div className="w-16 h-16 rounded-2xl bg-secondary-fixed flex items-center justify-center text-primary">
-                <span className="material-symbols-outlined text-3xl">architecture</span>
+          {classes.map(c => (
+            <div key={c.id} className={`bg-surface-container-lowest rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 transition-all hover:shadow-lg hover:shadow-primary/5 ${!c.isActive ? 'opacity-80' : ''}`}>
+              <div className="flex items-center gap-6 w-full md:w-auto">
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${c.isActive ? 'bg-secondary-fixed text-primary' : 'bg-surface-container-high text-outline'}`}>
+                  <span className="material-symbols-outlined text-3xl">school</span>
+                </div>
+                <div>
+                  <h4 className={`font-headline text-xl font-bold ${c.isActive ? 'text-primary' : 'text-on-surface-variant'}`}>{c.name}</h4>
+                  <p className="text-on-surface-variant font-medium mt-1 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-sm">schedule</span>
+                    {formatTime(c.startTime)} — {formatTime(c.endTime)}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h4 className="font-headline text-xl font-bold text-primary">Design Foundations</h4>
-                <p className="text-on-surface-variant font-medium mt-1 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-sm">schedule</span>
-                  09:00 AM — 11:30 AM
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-8 w-full md:w-auto justify-between md:justify-end">
-              <div className="flex gap-2">
-                <span className="px-3 py-1 bg-surface-container text-xs font-bold rounded-lg text-primary">MON</span>
-                <span className="px-3 py-1 bg-surface-container text-xs font-bold rounded-lg text-primary">WED</span>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-bold text-on-tertiary-container uppercase tracking-widest">Silent Mode</span>
-                <button className="w-14 h-8 bg-tertiary-fixed-dim rounded-full p-1 flex items-center justify-end transition-all cursor-pointer">
-                  <div className="w-6 h-6 bg-white rounded-full shadow-sm"></div>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Class Row 2 */}
-          <div className="bg-surface-container-lowest rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 transition-all hover:shadow-lg hover:shadow-primary/5">
-            <div className="flex items-center gap-6 w-full md:w-auto">
-              <div className="w-16 h-16 rounded-2xl bg-secondary-fixed flex items-center justify-center text-primary">
-                <span className="material-symbols-outlined text-3xl">functions</span>
-              </div>
-              <div>
-                <h4 className="font-headline text-xl font-bold text-primary">Quantum Physics</h4>
-                <p className="text-on-surface-variant font-medium mt-1 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-sm">schedule</span>
-                  01:45 PM — 03:15 PM
-                </p>
+              <div className="flex items-center gap-8 w-full md:w-auto justify-between md:justify-end">
+                <div className="flex gap-2">
+                  {c.days.map(d => (
+                    <span key={d} className={`px-3 py-1 bg-surface-container text-xs font-bold rounded-lg ${c.isActive ? 'text-primary' : 'text-outline'}`}>{dayNames[d]}</span>
+                  ))}
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className={`text-sm font-bold uppercase tracking-widest ${c.isActive ? 'text-on-tertiary-container' : 'text-outline-variant'}`}>
+                    {c.isActive ? 'Silent Mode' : 'Inactive'}
+                  </span>
+                  <button onClick={() => toggleClass(c.id)} className={`w-14 h-8 rounded-full p-1 flex items-center transition-all cursor-pointer ${c.isActive ? 'bg-tertiary-fixed-dim justify-end' : 'bg-outline-variant justify-start'}`}>
+                    <div className="w-6 h-6 bg-white rounded-full shadow-sm"></div>
+                  </button>
+                  <button onClick={() => removeClass(c.id)} className="text-error hover:bg-error/10 p-2 rounded-full transition-colors cursor-pointer flex items-center justify-center">
+                    <span className="material-symbols-outlined">delete</span>
+                  </button>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-8 w-full md:w-auto justify-between md:justify-end">
-              <div className="flex gap-2">
-                <span className="px-3 py-1 bg-surface-container text-xs font-bold rounded-lg text-primary">TUE</span>
-                <span className="px-3 py-1 bg-surface-container text-xs font-bold rounded-lg text-primary">THU</span>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-bold text-on-tertiary-container uppercase tracking-widest">Silent Mode</span>
-                <button className="w-14 h-8 bg-tertiary-fixed-dim rounded-full p-1 flex items-center justify-end transition-all cursor-pointer">
-                  <div className="w-6 h-6 bg-white rounded-full shadow-sm"></div>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Class Row 3 (Inactive) */}
-          <div className="bg-surface-container-lowest rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 transition-all opacity-80">
-            <div className="flex items-center gap-6 w-full md:w-auto">
-              <div className="w-16 h-16 rounded-2xl bg-surface-container-high flex items-center justify-center text-outline">
-                <span className="material-symbols-outlined text-3xl">history_edu</span>
-              </div>
-              <div>
-                <h4 className="font-headline text-xl font-bold text-on-surface-variant">Modern History</h4>
-                <p className="text-on-surface-variant font-medium mt-1 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-sm">schedule</span>
-                  10:00 AM — 12:00 PM
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-8 w-full md:w-auto justify-between md:justify-end">
-              <div className="flex gap-2">
-                <span className="px-3 py-1 bg-surface-container text-xs font-bold rounded-lg text-outline">FRI</span>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-bold text-outline-variant uppercase tracking-widest">Inactive</span>
-                <button className="w-14 h-8 bg-outline-variant rounded-full p-1 flex items-center justify-start transition-all cursor-pointer">
-                  <div className="w-6 h-6 bg-white rounded-full shadow-sm"></div>
-                </button>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
       </section>
 

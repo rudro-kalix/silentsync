@@ -1,6 +1,44 @@
 import React from 'react';
+import { useSync } from '../context/SyncContext';
 
 export default function PrayerSanctuary() {
+  const { prayers, togglePrayer, updatePrayerBuffer } = useSync();
+
+  const formatTime = (time: string) => {
+    if (!time) return '';
+    const [h, m] = time.split(':');
+    const hour = parseInt(h);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const formattedHour = hour % 12 || 12;
+    return `${formattedHour.toString().padStart(2, '0')}:${m} ${ampm}`;
+  };
+
+  const getNextPrayer = () => {
+    const now = new Date();
+    const currentMins = now.getHours() * 60 + now.getMinutes();
+    
+    const next = prayers.find(p => {
+      if (!p.time) return false;
+      const [h, m] = p.time.split(':').map(Number);
+      return (h * 60 + m) > currentMins;
+    });
+    
+    return next || prayers[0];
+  };
+
+  const nextPrayer = getNextPrayer();
+
+  const getIconForPrayer = (name: string) => {
+    switch (name.toLowerCase()) {
+      case 'fajr': return 'light_mode';
+      case 'dhuhr': return 'wb_sunny';
+      case 'asr': return 'partly_cloudy_day';
+      case 'maghrib': return 'wb_twilight';
+      case 'isha': return 'bedtime';
+      default: return 'auto_awesome';
+    }
+  };
+
   return (
     <>
       {/* Hero Section: Master Controls */}
@@ -51,11 +89,11 @@ export default function PrayerSanctuary() {
         <div className="bg-surface-container-low p-8 rounded-xl flex flex-col justify-center items-center text-center relative overflow-hidden group">
           <div className="w-16 h-16 rounded-full bg-secondary-fixed flex items-center justify-center mb-6 relative">
             <div className="absolute inset-0 bg-tertiary-fixed-dim rounded-full animate-ping opacity-20 group-hover:opacity-40"></div>
-            <span className="material-symbols-outlined text-primary text-3xl">auto_awesome</span>
+            <span className="material-symbols-outlined text-primary text-3xl">{getIconForPrayer(nextPrayer?.name || '')}</span>
           </div>
           <span className="text-on-surface-variant font-semibold uppercase text-xs tracking-[0.2em] mb-2">Next Sync</span>
-          <h3 className="text-4xl font-black text-primary font-headline">Asr</h3>
-          <span className="text-2xl font-medium text-tertiary-fixed-variant mt-1">3:42 PM</span>
+          <h3 className="text-4xl font-black text-primary font-headline">{nextPrayer?.name || 'Loading'}</h3>
+          <span className="text-2xl font-medium text-tertiary-fixed-variant mt-1">{formatTime(nextPrayer?.time || '')}</span>
         </div>
       </section>
 
@@ -74,181 +112,67 @@ export default function PrayerSanctuary() {
 
         {/* Prayer Items Container */}
         <div className="space-y-4">
-          {/* Fajr Card */}
-          <div className="bg-surface-container-lowest p-1 rounded-xl transition-all hover:bg-white border border-transparent hover:border-outline-variant/20 shadow-sm">
-            <div className="flex flex-wrap md:flex-nowrap items-center p-6 gap-8">
-              <div className="flex items-center gap-6 min-w-[180px]">
-                <div className="w-12 h-12 rounded-full bg-secondary-fixed flex items-center justify-center">
-                  <span className="material-symbols-outlined text-primary">light_mode</span>
-                </div>
-                <div>
-                  <h4 className="text-xl font-bold text-primary font-headline">Fajr</h4>
-                  <span className="text-on-surface-variant font-medium">05:14 AM</span>
-                </div>
-              </div>
-              <div className="flex-1 grid grid-cols-2 gap-8">
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Silent Buffer Before</label>
-                  <div className="flex items-center bg-surface-container-low rounded-lg px-3 py-2 justify-between">
-                    <span className="text-sm font-semibold">10 mins</span>
-                    <span className="material-symbols-outlined text-sm cursor-pointer">expand_more</span>
+          {prayers.map((prayer) => {
+            const isNext = nextPrayer?.name === prayer.name;
+            return (
+              <div key={prayer.name} className={`${isNext ? 'bg-white border-2 border-tertiary-fixed-dim shadow-xl relative scale-[1.02] z-10' : 'bg-surface-container-lowest border border-transparent hover:border-outline-variant/20 shadow-sm'} p-1 rounded-xl transition-all`}>
+                {isNext && <div className="absolute -top-3 left-6 bg-tertiary-fixed text-tertiary-container text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Upcoming Session</div>}
+                <div className={`flex flex-wrap md:flex-nowrap items-center p-6 gap-8 ${!prayer.isActive ? 'opacity-60' : ''}`}>
+                  <div className="flex items-center gap-6 min-w-[180px]">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isNext ? 'bg-tertiary-fixed' : 'bg-secondary-fixed'}`}>
+                      <span className="material-symbols-outlined text-primary">{getIconForPrayer(prayer.name)}</span>
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-bold text-primary font-headline">{prayer.name}</h4>
+                      <span className="text-on-surface-variant font-medium">{formatTime(prayer.time)}</span>
+                    </div>
                   </div>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Silent Buffer After</label>
-                  <div className="flex items-center bg-surface-container-low rounded-lg px-3 py-2 justify-between">
-                    <span className="text-sm font-semibold">20 mins</span>
-                    <span className="material-symbols-outlined text-sm cursor-pointer">expand_more</span>
+                  <div className="flex-1 grid grid-cols-2 gap-8">
+                    <div className="flex flex-col gap-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Silent Buffer Before</label>
+                      <div className="flex items-center bg-surface-container-low rounded-lg px-3 py-2 justify-between">
+                        <select 
+                          value={prayer.bufferBefore} 
+                          onChange={(e) => updatePrayerBuffer(prayer.name, parseInt(e.target.value), prayer.bufferAfter)}
+                          className="bg-transparent text-sm font-semibold outline-none w-full cursor-pointer appearance-none"
+                        >
+                          <option value={0}>0 mins</option>
+                          <option value={5}>5 mins</option>
+                          <option value={10}>10 mins</option>
+                          <option value={15}>15 mins</option>
+                          <option value={30}>30 mins</option>
+                        </select>
+                        <span className="material-symbols-outlined text-sm pointer-events-none">expand_more</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Silent Buffer After</label>
+                      <div className="flex items-center bg-surface-container-low rounded-lg px-3 py-2 justify-between">
+                        <select 
+                          value={prayer.bufferAfter} 
+                          onChange={(e) => updatePrayerBuffer(prayer.name, prayer.bufferBefore, parseInt(e.target.value))}
+                          className="bg-transparent text-sm font-semibold outline-none w-full cursor-pointer appearance-none"
+                        >
+                          <option value={0}>0 mins</option>
+                          <option value={5}>5 mins</option>
+                          <option value={10}>10 mins</option>
+                          <option value={15}>15 mins</option>
+                          <option value={20}>20 mins</option>
+                          <option value={30}>30 mins</option>
+                        </select>
+                        <span className="material-symbols-outlined text-sm pointer-events-none">expand_more</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="text-xs font-bold text-tertiary-fixed-variant bg-tertiary-fixed/20 px-3 py-1 rounded-full">ACTIVE</span>
-                <span className="material-symbols-outlined text-on-surface-variant cursor-pointer">more_vert</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Dhuhr Card */}
-          <div className="bg-surface-container-lowest p-1 rounded-xl transition-all hover:bg-white border border-transparent hover:border-outline-variant/20 shadow-sm">
-            <div className="flex flex-wrap md:flex-nowrap items-center p-6 gap-8">
-              <div className="flex items-center gap-6 min-w-[180px]">
-                <div className="w-12 h-12 rounded-full bg-secondary-fixed flex items-center justify-center">
-                  <span className="material-symbols-outlined text-primary">wb_sunny</span>
-                </div>
-                <div>
-                  <h4 className="text-xl font-bold text-primary font-headline">Dhuhr</h4>
-                  <span className="text-on-surface-variant font-medium">12:58 PM</span>
-                </div>
-              </div>
-              <div className="flex-1 grid grid-cols-2 gap-8">
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Silent Buffer Before</label>
-                  <div className="flex items-center bg-surface-container-low rounded-lg px-3 py-2 justify-between">
-                    <span className="text-sm font-semibold">5 mins</span>
-                    <span className="material-symbols-outlined text-sm cursor-pointer">expand_more</span>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Silent Buffer After</label>
-                  <div className="flex items-center bg-surface-container-low rounded-lg px-3 py-2 justify-between">
-                    <span className="text-sm font-semibold">15 mins</span>
-                    <span className="material-symbols-outlined text-sm cursor-pointer">expand_more</span>
+                  <div className="flex items-center gap-4">
+                    <button onClick={() => togglePrayer(prayer.name)} className={`text-xs font-bold px-3 py-1 rounded-full cursor-pointer transition-colors ${prayer.isActive ? 'text-tertiary-fixed-variant bg-tertiary-fixed/20' : 'text-outline-variant bg-surface-container-high'}`}>
+                      {prayer.isActive ? 'ACTIVE' : 'INACTIVE'}
+                    </button>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <span className="text-xs font-bold text-tertiary-fixed-variant bg-tertiary-fixed/20 px-3 py-1 rounded-full">ACTIVE</span>
-                <span className="material-symbols-outlined text-on-surface-variant cursor-pointer">more_vert</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Asr Card (Current) */}
-          <div className="bg-white p-1 rounded-xl border-2 border-tertiary-fixed-dim shadow-xl relative scale-[1.02] z-10">
-            <div className="absolute -top-3 left-6 bg-tertiary-fixed text-tertiary-container text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Upcoming Session</div>
-            <div className="flex flex-wrap md:flex-nowrap items-center p-6 gap-8">
-              <div className="flex items-center gap-6 min-w-[180px]">
-                <div className="w-12 h-12 rounded-full bg-tertiary-fixed flex items-center justify-center">
-                  <span className="material-symbols-outlined text-primary">partly_cloudy_day</span>
-                </div>
-                <div>
-                  <h4 className="text-xl font-bold text-primary font-headline">Asr</h4>
-                  <span className="text-on-surface-variant font-medium">03:42 PM</span>
-                </div>
-              </div>
-              <div className="flex-1 grid grid-cols-2 gap-8">
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Silent Buffer Before</label>
-                  <div className="flex items-center bg-surface-container-low rounded-lg px-3 py-2 justify-between">
-                    <span className="text-sm font-semibold">5 mins</span>
-                    <span className="material-symbols-outlined text-sm cursor-pointer">expand_more</span>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Silent Buffer After</label>
-                  <div className="flex items-center bg-surface-container-low rounded-lg px-3 py-2 justify-between">
-                    <span className="text-sm font-semibold">20 mins</span>
-                    <span className="material-symbols-outlined text-sm cursor-pointer">expand_more</span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="text-xs font-bold text-tertiary-fixed-variant bg-tertiary-fixed/20 px-3 py-1 rounded-full">ACTIVE</span>
-                <span className="material-symbols-outlined text-on-surface-variant cursor-pointer">more_vert</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Maghrib Card */}
-          <div className="bg-surface-container-lowest p-1 rounded-xl transition-all hover:bg-white border border-transparent hover:border-outline-variant/20 shadow-sm">
-            <div className="flex flex-wrap md:flex-nowrap items-center p-6 gap-8">
-              <div className="flex items-center gap-6 min-w-[180px]">
-                <div className="w-12 h-12 rounded-full bg-secondary-fixed flex items-center justify-center">
-                  <span className="material-symbols-outlined text-primary">wb_twilight</span>
-                </div>
-                <div>
-                  <h4 className="text-xl font-bold text-primary font-headline">Maghrib</h4>
-                  <span className="text-on-surface-variant font-medium">06:24 PM</span>
-                </div>
-              </div>
-              <div className="flex-1 grid grid-cols-2 gap-8">
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Silent Buffer Before</label>
-                  <div className="flex items-center bg-surface-container-low rounded-lg px-3 py-2 justify-between">
-                    <span className="text-sm font-semibold">5 mins</span>
-                    <span className="material-symbols-outlined text-sm cursor-pointer">expand_more</span>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Silent Buffer After</label>
-                  <div className="flex items-center bg-surface-container-low rounded-lg px-3 py-2 justify-between">
-                    <span className="text-sm font-semibold">10 mins</span>
-                    <span className="material-symbols-outlined text-sm cursor-pointer">expand_more</span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="text-xs font-bold text-tertiary-fixed-variant bg-tertiary-fixed/20 px-3 py-1 rounded-full">ACTIVE</span>
-                <span className="material-symbols-outlined text-on-surface-variant cursor-pointer">more_vert</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Isha Card */}
-          <div className="bg-surface-container-lowest p-1 rounded-xl transition-all hover:bg-white border border-transparent hover:border-outline-variant/20 shadow-sm">
-            <div className="flex flex-wrap md:flex-nowrap items-center p-6 gap-8">
-              <div className="flex items-center gap-6 min-w-[180px]">
-                <div className="w-12 h-12 rounded-full bg-secondary-fixed flex items-center justify-center">
-                  <span className="material-symbols-outlined text-primary">bedtime</span>
-                </div>
-                <div>
-                  <h4 className="text-xl font-bold text-primary font-headline">Isha</h4>
-                  <span className="text-on-surface-variant font-medium">07:54 PM</span>
-                </div>
-              </div>
-              <div className="flex-1 grid grid-cols-2 gap-8">
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Silent Buffer Before</label>
-                  <div className="flex items-center bg-surface-container-low rounded-lg px-3 py-2 justify-between">
-                    <span className="text-sm font-semibold">5 mins</span>
-                    <span className="material-symbols-outlined text-sm cursor-pointer">expand_more</span>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Silent Buffer After</label>
-                  <div className="flex items-center bg-surface-container-low rounded-lg px-3 py-2 justify-between">
-                    <span className="text-sm font-semibold">15 mins</span>
-                    <span className="material-symbols-outlined text-sm cursor-pointer">expand_more</span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="text-xs font-bold text-tertiary-fixed-variant bg-tertiary-fixed/20 px-3 py-1 rounded-full">ACTIVE</span>
-                <span className="material-symbols-outlined text-on-surface-variant cursor-pointer">more_vert</span>
-              </div>
-            </div>
-          </div>
+            );
+          })}
         </div>
       </section>
 

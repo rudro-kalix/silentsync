@@ -1,45 +1,70 @@
 import React from 'react';
+import { useSync } from '../context/SyncContext';
 
 export default function Dashboard() {
+  const { deviceState, triggerQuickOverride } = useSync();
+  const { isSilent, activeEvent, timeRemainingMins } = deviceState;
+
+  const formatTime = (mins: number) => {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m`;
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
       {/* Hero / Current Status Section */}
       <section className="lg:col-span-8 flex flex-col gap-8">
-        <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-primary to-primary-container p-8 lg:p-12 text-on-primary">
-          {/* Glass Decorative Elements */}
-          <div className="absolute -top-12 -right-12 w-64 h-64 bg-tertiary-fixed-dim/10 rounded-full blur-3xl"></div>
-          <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-secondary-fixed/5 rounded-full blur-2xl"></div>
-          
-          <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-8">
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-tertiary-fixed-dim/20 flex items-center justify-center peace-pulse">
-                  <span className="material-symbols-outlined text-tertiary-fixed-dim" style={{ fontVariationSettings: "'FILL' 1" }}>do_not_disturb_on</span>
+        {isSilent ? (
+          <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-primary to-primary-container p-8 lg:p-12 text-on-primary transition-all duration-500">
+            {/* Glass Decorative Elements */}
+            <div className="absolute -top-12 -right-12 w-64 h-64 bg-tertiary-fixed-dim/10 rounded-full blur-3xl"></div>
+            <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-secondary-fixed/5 rounded-full blur-2xl"></div>
+            
+            <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-8">
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-tertiary-fixed-dim/20 flex items-center justify-center peace-pulse">
+                    <span className="material-symbols-outlined text-tertiary-fixed-dim" style={{ fontVariationSettings: "'FILL' 1" }}>do_not_disturb_on</span>
+                  </div>
+                  <span className="font-label text-on-tertiary-container bg-tertiary-container/30 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase">Active Mode</span>
                 </div>
-                <span className="font-label text-on-tertiary-container bg-tertiary-container/30 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase">Active Mode</span>
+                <h1 className="font-headline text-4xl lg:text-6xl font-extrabold tracking-tight">Phone is SILENT</h1>
+                <p className="text-on-primary-container text-lg max-w-md font-medium">Your device is synced with <span className="text-tertiary-fixed-dim">{activeEvent}</span>. Quiet surroundings guaranteed.</p>
               </div>
-              <h1 className="font-headline text-4xl lg:text-6xl font-extrabold tracking-tight">Phone is SILENT</h1>
-              <p className="text-on-primary-container text-lg max-w-md font-medium">Your device is synced with <span className="text-tertiary-fixed-dim">Morning Meditation</span>. Quiet surroundings guaranteed.</p>
+              <div className="flex flex-col items-center md:items-end">
+                <div className="text-5xl lg:text-7xl font-headline font-bold tabular-nums tracking-tighter">
+                  {formatTime(timeRemainingMins)}<span className="text-2xl font-medium opacity-50 ml-1">remaining</span>
+                </div>
+              </div>
             </div>
-            <div className="flex flex-col items-center md:items-end">
-              <div className="text-5xl lg:text-7xl font-headline font-bold tabular-nums tracking-tighter">
-                00:42<span className="text-2xl font-medium opacity-50 ml-1">remaining</span>
+            
+            <div className="mt-12 flex flex-wrap gap-4 relative z-10">
+              <button className="bg-tertiary-fixed-dim text-tertiary px-8 py-4 rounded-xl font-bold text-sm hover:scale-95 transition-transform cursor-pointer">
+                End Now
+              </button>
+              <button className="bg-white/10 backdrop-blur-md border border-white/10 text-white px-8 py-4 rounded-xl font-bold text-sm hover:bg-white/20 transition-all cursor-pointer">
+                Add +15 mins
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="relative overflow-hidden rounded-[2rem] bg-surface-container-lowest border border-outline-variant/30 p-8 lg:p-12 text-on-surface transition-all duration-500">
+            <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-8">
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-secondary-container flex items-center justify-center">
+                    <span className="material-symbols-outlined text-on-secondary-container" style={{ fontVariationSettings: "'FILL' 1" }}>notifications_active</span>
+                  </div>
+                  <span className="font-label text-on-surface-variant bg-surface-variant/30 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase">Standby Mode</span>
+                </div>
+                <h1 className="font-headline text-4xl lg:text-6xl font-extrabold tracking-tight text-primary">Phone is NORMAL</h1>
+                <p className="text-on-surface-variant text-lg max-w-md font-medium">No active syncs right now. Your device will ring normally.</p>
               </div>
             </div>
           </div>
-          
-          <div className="mt-12 flex flex-wrap gap-4 relative z-10">
-            <button className="bg-tertiary-fixed-dim text-tertiary px-8 py-4 rounded-xl font-bold text-sm hover:scale-95 transition-transform cursor-pointer">
-              End Now
-            </button>
-            <button className="bg-white/10 backdrop-blur-md border border-white/10 text-white px-8 py-4 rounded-xl font-bold text-sm hover:bg-white/20 transition-all cursor-pointer">
-              Add +15 mins
-            </button>
-            <button className="bg-white/10 backdrop-blur-md border border-white/10 text-white px-8 py-4 rounded-xl font-bold text-sm hover:bg-white/20 transition-all cursor-pointer">
-              Add +1 hour
-            </button>
-          </div>
-        </div>
+        )}
 
         {/* Bento Grid: Secondary Features */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -52,7 +77,7 @@ export default function Dashboard() {
               <h3 className="font-headline text-xl font-bold">Quick Override</h3>
               <p className="text-on-surface-variant text-sm">Need immediate peace? Trigger a 30-minute silent window with one tap.</p>
             </div>
-            <button className="mt-6 w-full py-3 bg-secondary-container text-on-secondary-container rounded-xl font-bold text-sm hover:bg-secondary transition-all hover:text-white cursor-pointer">
+            <button onClick={triggerQuickOverride} className="mt-6 w-full py-3 bg-secondary-container text-on-secondary-container rounded-xl font-bold text-sm hover:bg-secondary transition-all hover:text-white cursor-pointer">
               Activate Instant Sync
             </button>
           </div>
